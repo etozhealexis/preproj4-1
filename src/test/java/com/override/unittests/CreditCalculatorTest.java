@@ -2,6 +2,7 @@ package com.override.unittests;
 
 import com.override.unittests.enums.ClientType;
 import com.override.unittests.exception.CannotBePayedException;
+import com.override.unittests.exception.CentralBankNotRespondingException;
 import com.override.unittests.service.CentralBankService;
 import com.override.unittests.service.CreditCalculator;
 import org.junit.jupiter.api.Assertions;
@@ -14,7 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class CreditCalculatorTest {
@@ -37,12 +38,20 @@ class CreditCalculatorTest {
 
     @Test
     public void calculateOverpaymentBusinessTest() {
-        //TODO
+        when(centralBankService.getKeyRate()).thenReturn(10d);
+        double amount = 100000d;
+        double monthPaymentAmount = 10000d;
+        double result = creditCalculator.calculateOverpayment(amount, monthPaymentAmount, ClientType.BUSINESS);
+        Assertions.assertEquals(11000d, result);
     }
 
     @Test
     public void calculateOverpaymentIndividualTest() {
-        //TODO
+        when(centralBankService.getKeyRate()).thenReturn(10d);
+        double amount = 100000d;
+        double monthPaymentAmount = 10000d;
+        double result = creditCalculator.calculateOverpayment(amount, monthPaymentAmount, ClientType.INDIVIDUAL);
+        Assertions.assertEquals(12000d, result);
     }
 
     @Test
@@ -55,11 +64,21 @@ class CreditCalculatorTest {
 
     @Test
     public void calculateOverpaymentOnManyYearCreditTest() {
-        //TODO тест для случая, когда кредит все таки можно выплатить, но проценты будут начисляться много лет
+        when(centralBankService.getKeyRate()).thenReturn(10d);
+        double amount = 100000d;
+        double monthPaymentAmount = 1000d;
+        double result = creditCalculator.calculateOverpayment(amount, monthPaymentAmount, ClientType.GOVERMENT);
+        Assertions.assertEquals(125681.8191031709, result);
     }
 
     @Test
     public void calculateOverpaymentWhenNoConnectionTest() {
+        when(centralBankService.getKeyRate()).thenThrow(new CentralBankNotRespondingException());
+        when(centralBankService.getDefaultCreditRate()).thenReturn(30d);
+        double amount = 100000d;
+        double monthPaymentAmount = 10000d;
+        double result = creditCalculator.calculateOverpayment(amount, monthPaymentAmount, ClientType.GOVERMENT);
+        Assertions.assertEquals(33000d, result);
         //TODO
     }
 }
